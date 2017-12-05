@@ -10,10 +10,10 @@ import UIKit
 import CoreLocation
 
 // MARK: - FourSquare Client Id and Secret
-let client_id = "CLIENT_ID" // visit developer.foursqure.com for API key
-let client_secret = "CLIENT_SECRET" // visit developer.foursqure.com for API key
+let client_id = "LHD5XJ3ZAJTIO0IMXY12NIMYSLOSGYJCTYYJN1WJMD4PJ4XT" // visit developer.foursqure.com for API key
+let client_secret = "I0SATNN3JW0CHHDXZQ2AN1K0AKCFXLMFKLO4OGC1I41UF005" // visit developer.foursqure.com for API key
 
-class ViewController: UIViewController {
+class ViewController: UIViewController, UISearchResultsUpdating, UISearchBarDelegate {
 
     // MARK: - Outlets
     @IBOutlet weak var tblVenues: UITableView!
@@ -22,12 +22,14 @@ class ViewController: UIViewController {
     // MARK: - Properties
     let locationManager = CLLocationManager()
     var currentLocation: CLLocationCoordinate2D!
-    
+    var searchController: UISearchController? = nil
     var arrSearchResults: [Venue] = []
     
     // MARK: - View Controller Lifecycle
     override func viewDidLoad() {
         super.viewDidLoad()
+        
+        self.title = "Venues"
         
         currentLocation = CLLocationCoordinate2D(latitude: 28.4771109, longitude: 77.0769104)
         
@@ -37,8 +39,13 @@ class ViewController: UIViewController {
         
         // Do any additional setup after loading the view, typically from a nib.
         
-        lblCurrentLocation.isHidden = true
+        lblCurrentLocation.superview?.isHidden = true
         tblVenues.isHidden = true
+        
+        tblVenues.estimatedRowHeight = 64
+        tblVenues.rowHeight = UITableViewAutomaticDimension
+        
+        tblVenues.tableFooterView = UIView()
         
         getCurrentLocation()
         
@@ -76,12 +83,31 @@ class ViewController: UIViewController {
     func showLocationAlert() {
         let alert = UIAlertController(title: "Location Disabled", message: "Please enable location for YVFourSquareTrendingVenues", preferredStyle: .alert)
         alert.addAction(UIAlertAction(title: "Ok", style: .cancel, handler: { (action) in
-            self.lblCurrentLocation.isHidden = false
+            self.lblCurrentLocation.superview?.isHidden = false
             self.tblVenues.isHidden = false
         }))
         present(alert, animated: true, completion: nil)
     }
 
+    @IBAction func searchAction(_ sender: UIBarButtonItem) {
+        if searchController == nil {
+            searchController = UISearchController(searchResultsController: nil)
+            searchController?.searchResultsUpdater = self
+            searchController?.searchBar.delegate = self
+            searchController?.dimsBackgroundDuringPresentation = false
+        }
+        self.navigationItem.searchController = searchController
+    }
+    
+    func updateSearchResults(for searchController: UISearchController) {
+        if (searchController.searchBar.text?.count ?? 0) >= 3 {
+            searchForVenue()
+        }
+    }
+    
+    func searchBarCancelButtonClicked(_ searchBar: UISearchBar) {
+        self.navigationItem.searchController = nil
+    }
 }
 
 // MARK: - Location Manager Delegate
@@ -100,6 +126,9 @@ extension ViewController: CLLocationManagerDelegate {
         }
         
         currentLocation = location.coordinate
+        if arrSearchResults.count == 0 {
+            getTrendingVenues()
+        }
     }
     
     func locationManager(_ manager: CLLocationManager, didFailWithError error: Error) {
@@ -123,27 +152,27 @@ extension ViewController: UITableViewDelegate, UITableViewDataSource {
         cell.title.text = venue.name
         
         if let rating = venue.rating {
-            cell.rating.text = String(format: "%.1f", Double(rating) ?? 0) + "⭐️"
+            cell.rating.text = String(format: "%.1f", rating) + "⭐️"
+            cell.rating.isHidden = false
+        } else {
+            cell.rating.isHidden = true
         }
         
         if let location = venue.location {
-            cell.distance.text = "\(Int(location.distance ?? "0") ?? 0)m"
+            cell.distance.text = "\(location.distance ?? 0)m"
             cell.address.text = location.address
         }
         
         return cell
     }
     
-    func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
-        
-    }
 }
 
 // MARK: - API Calls
 extension ViewController {
     
     func getTrendingVenues() {
-        let url = "https://api.foursquare.com/v2/venues/trending?ll=\(currentLocation.latitude),\(currentLocation.longitude)&limit=50&client_id=\(client_id)&client_secret=\(client_secret)"
+        let url = "https://api.foursquare.com/v2/venues/trending?ll=\(currentLocation.latitude),\(currentLocation.longitude)&limit=50&client_id=\(client_id)&client_secret=\(client_secret)&v=20171206"
         
         let request = NSMutableURLRequest(url: URL(string: url)!)
         let session = URLSession.shared
@@ -158,17 +187,21 @@ extension ViewController {
             if let jsonData = data {
                 
                 do {
-                    self.arrSearchResults = try JSONDecoder().decode(Venues.self, from: jsonData).venues
-                    
-                    // set label name and visible
-                    DispatchQueue.main.async {
-                        if let currentVenueName = self.arrSearchResults.first?.name {
-                            self.lblCurrentLocation.text = "You're at \(currentVenueName). Here's some trending venues nearby."
-                        }
-                        self.lblCurrentLocation.isHidden = false
-                    }
+                    self.arrSearchResults = try JSONDecoder().decode(Venues.self, from: jsonData).response.venues
                 } catch {
                     print(error.localizedDescription)
+                }
+                
+                // set label name and visible
+                DispatchQueue.main.async {
+                    if let currentVenueName = self.arrSearchResults.first?.name {
+                        self.lblCurrentLocation.text = "You're at \(currentVenueName). Here's some trending venues nearby."
+                    } else if self.arrSearchResults.count == 0 {
+                        self.lblCurrentLocation.text = "No Data Available"
+                    }
+                    self.lblCurrentLocation.superview?.isHidden = false
+                    self.tblVenues.isHidden = false
+                    self.tblVenues.reloadData()
                 }
             }
         })
@@ -177,7 +210,7 @@ extension ViewController {
     }
     
     func searchForVenue() {
-        let url = "https://api.foursquare.com/v2/venues/search?ll=\(currentLocation.latitude),\(currentLocation.longitude)&limit=100&client_id=\(client_id)&client_secret=\(client_secret)"
+        let url = "https://api.foursquare.com/v2/venues/search?ll=\(currentLocation.latitude),\(currentLocation.longitude)&limit=100&client_id=\(client_id)&client_secret=\(client_secret)&v=20171206&query=" + (searchController?.searchBar.text?.trimmingCharacters(in: .whitespacesAndNewlines) ?? "")
         
         let request = NSMutableURLRequest(url: URL(string: url)!)
         let session = URLSession.shared
@@ -192,9 +225,11 @@ extension ViewController {
             if let jsonData = data {
                 
                 do {
-                    self.arrSearchResults = try JSONDecoder().decode(Venues.self, from: jsonData).venues
+                    
+                    self.arrSearchResults = try JSONDecoder().decode(Venues.self, from: jsonData).response.venues
                     
                     DispatchQueue.main.async {
+                        self.lblCurrentLocation.superview?.isHidden = true
                         self.tblVenues.isHidden = false
                         self.tblVenues.reloadData()
                     }
