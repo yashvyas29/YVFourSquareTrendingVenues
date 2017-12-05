@@ -16,6 +16,28 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
 
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplicationLaunchOptionsKey: Any]?) -> Bool {
         // Override point for customization after application launch.
+        
+        // Clearing caches after 7 days
+        let fileManager = FileManager.default
+        if let cachesUrl =  FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask).first {
+            
+            let cachesPath = cachesUrl.path
+            
+            do {
+                let files = try fileManager.contentsOfDirectory(atPath: cachesPath)
+                if let filePath = files.first {
+                    let attributes = try fileManager.attributesOfItem(atPath: filePath)
+                    if let lastModifiedDate = attributes[.modificationDate] as? Date, lastModifiedDate.timeIntervalSinceNow > (7*24*36*36) {
+                        for file in files {
+                            try fileManager.removeItem(atPath: file)
+                        }
+                    }
+                }
+            } catch {
+                print(error.localizedDescription)
+            }
+        }
+        
         return true
     }
 
