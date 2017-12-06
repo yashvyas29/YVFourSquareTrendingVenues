@@ -35,9 +35,6 @@ class ViewController: UIViewController {
         
         // Do any additional setup after loading the view, typically from a nib.
         
-        lblCurrentLocation.superview?.isHidden = true
-        tblVenues.isHidden = true
-        
         tblVenues.estimatedRowHeight = 64
         tblVenues.rowHeight = UITableViewAutomaticDimension
         

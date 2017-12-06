@@ -38,16 +38,13 @@ extension NSObject {
             return
         }
         
-        viewController.tblVenues.isHidden = true
-        viewController.lblCurrentLocation.superview?.isHidden = true
+        viewController.lblCurrentLocation.isHidden = true
         
         let url = "https://api.foursquare.com/v2/venues/trending?ll=\(viewController.currentLocation.latitude),\(viewController.currentLocation.longitude)&limit=50&client_id=\(client_id)&client_secret=\(client_secret)&v=20171206"
-        
-        let request = NSMutableURLRequest(url: URL(string: url)!)
         let session = URLSession.shared
         
+        let request = NSMutableURLRequest(url: URL(string: url)!)
         request.httpMethod = "GET"
-        
         request.addValue("application/json", forHTTPHeaderField: "Content-Type")
         request.addValue("application/json", forHTTPHeaderField: "Accept")
         
@@ -58,19 +55,25 @@ extension NSObject {
                 do {
                     viewController.arrSearchResults = try JSONDecoder().decode(Venues.self, from: jsonData).response.venues
                 } catch {
-                    print(error.localizedDescription)
+                    DispatchQueue.main.async {
+                        viewController.lblCurrentLocation.text = error.localizedDescription
+                        viewController.lblCurrentLocation.isHidden = false
+                    }
                 }
                 
-                // set label name and visible
                 DispatchQueue.main.async {
                     if let currentVenueName = viewController.arrSearchResults.first?.name {
                         viewController.lblCurrentLocation.text = "You're at \(currentVenueName).\nHere're some trending venues nearby."
                     } else if viewController.arrSearchResults.count == 0 {
                         viewController.lblCurrentLocation.text = "No Data Available"
                     }
-                    viewController.lblCurrentLocation.superview?.isHidden = false
-                    viewController.tblVenues.isHidden = false
+                    viewController.lblCurrentLocation.isHidden = false
                     viewController.tblVenues.reloadData()
+                }
+            } else if let error = err {
+                DispatchQueue.main.async {
+                    viewController.lblCurrentLocation.text = error.localizedDescription
+                    viewController.lblCurrentLocation.isHidden = false
                 }
             }
         })
@@ -88,16 +91,13 @@ extension NSObject {
             return
         }
         
-        viewController.tblVenues.isHidden = true
-        viewController.lblCurrentLocation.superview?.isHidden = true
+        viewController.lblCurrentLocation.isHidden = true
         
         let url = "https://api.foursquare.com/v2/venues/search?ll=\(viewController.currentLocation.latitude),\(viewController.currentLocation.longitude)&limit=100&client_id=\(client_id)&client_secret=\(client_secret)&v=20171206&query=" + (viewController.searchController?.searchBar.text?.trimmingCharacters(in: .whitespacesAndNewlines) ?? "")
-        
-        let request = NSMutableURLRequest(url: URL(string: url)!)
         let session = URLSession.shared
         
+        let request = NSMutableURLRequest(url: URL(string: url)!)
         request.httpMethod = "GET"
-        
         request.addValue("application/json", forHTTPHeaderField: "Content-Type")
         request.addValue("application/json", forHTTPHeaderField: "Accept")
         
@@ -106,7 +106,6 @@ extension NSObject {
             if let jsonData = data {
                 
                 do {
-                    
                     viewController.arrSearchResults = try JSONDecoder().decode(Venues.self, from: jsonData).response.venues
                     
                     DispatchQueue.main.async {
@@ -115,12 +114,19 @@ extension NSObject {
                         } else if viewController.arrSearchResults.count == 0 {
                             viewController.lblCurrentLocation.text = "No Data Available"
                         }
-                        viewController.lblCurrentLocation.superview?.isHidden = false
-                        viewController.tblVenues.isHidden = false
+                        viewController.lblCurrentLocation.isHidden = false
                         viewController.tblVenues.reloadData()
                     }
                 } catch {
-                    print(error.localizedDescription)
+                    DispatchQueue.main.async {
+                        viewController.lblCurrentLocation.text = error.localizedDescription
+                        viewController.lblCurrentLocation.isHidden = false
+                    }
+                }
+            } else if let error = err {
+                DispatchQueue.main.async {
+                    viewController.lblCurrentLocation.text = error.localizedDescription
+                    viewController.lblCurrentLocation.isHidden = false
                 }
             }
         })
