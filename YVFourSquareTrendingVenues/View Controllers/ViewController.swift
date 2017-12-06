@@ -13,7 +13,7 @@ import CoreLocation
 let client_id = "LHD5XJ3ZAJTIO0IMXY12NIMYSLOSGYJCTYYJN1WJMD4PJ4XT" // visit developer.foursqure.com for API key
 let client_secret = "I0SATNN3JW0CHHDXZQ2AN1K0AKCFXLMFKLO4OGC1I41UF005" // visit developer.foursqure.com for API key
 
-class ViewController: UIViewController, UISearchResultsUpdating, UISearchBarDelegate {
+class ViewController: UIViewController, UISearchBarDelegate {
 
     // MARK: - Outlets
     @IBOutlet weak var tblVenues: UITableView!
@@ -72,6 +72,8 @@ class ViewController: UIViewController, UISearchResultsUpdating, UISearchBarDele
             switch(CLLocationManager.authorizationStatus()) {
             case .authorizedWhenInUse:
                 locationManager.startUpdatingLocation()
+            case .notDetermined:
+                break
             default:
                 showLocationAlert()
             }
@@ -92,21 +94,21 @@ class ViewController: UIViewController, UISearchResultsUpdating, UISearchBarDele
     @IBAction func searchAction(_ sender: UIBarButtonItem) {
         if searchController == nil {
             searchController = UISearchController(searchResultsController: nil)
-            searchController?.searchResultsUpdater = self
             searchController?.searchBar.delegate = self
             searchController?.dimsBackgroundDuringPresentation = false
         }
         self.navigationItem.searchController = searchController
     }
     
-    func updateSearchResults(for searchController: UISearchController) {
-        if (searchController.searchBar.text?.count ?? 0) >= 3 {
-            searchForVenue()
-        }
-    }
-    
     func searchBarCancelButtonClicked(_ searchBar: UISearchBar) {
         self.navigationItem.searchController = nil
+    }
+    
+    func searchBar(_ searchBar: UISearchBar, shouldChangeTextIn range: NSRange, replacementText text: String) -> Bool {
+        if ((text.count == 0 && range.length == 1) || (range.location >= 2)) && text != "\n"{
+            searchForVenue()
+        }
+        return true
     }
 }
 
@@ -171,6 +173,19 @@ extension ViewController: UITableViewDelegate, UITableViewDataSource {
 // MARK: - API Calls
 extension ViewController {
     
+    // Cancel All Active Request
+    func cancelAllRunningRequest(completion: @escaping (_ finished: Bool) -> Void) {
+        
+        URLSession.shared.getTasksWithCompletionHandler {
+            dataTasks, uploadTasks, downloadTasks in
+            
+            for i in 0 ..< dataTasks.count {
+                dataTasks[i].cancel()
+            }
+            completion(true)
+        }
+    }
+    
     func getTrendingVenues() {
         let url = "https://api.foursquare.com/v2/venues/trending?ll=\(currentLocation.latitude),\(currentLocation.longitude)&limit=50&client_id=\(client_id)&client_secret=\(client_secret)&v=20171206"
         
@@ -206,7 +221,12 @@ extension ViewController {
             }
         })
         
-        task.resume()
+        tblVenues.isHidden = true
+        cancelAllRunningRequest { (finished) in
+            if finished {
+                task.resume()
+            }
+        }
     }
     
     func searchForVenue() {
@@ -229,7 +249,12 @@ extension ViewController {
                     self.arrSearchResults = try JSONDecoder().decode(Venues.self, from: jsonData).response.venues
                     
                     DispatchQueue.main.async {
-                        self.lblCurrentLocation.superview?.isHidden = true
+                        if self.arrSearchResults.count == 0 {
+                            self.lblCurrentLocation.text = "No Data Available"
+                            self.lblCurrentLocation.superview?.isHidden = false
+                        } else {
+                            self.lblCurrentLocation.superview?.isHidden = true
+                        }
                         self.tblVenues.isHidden = false
                         self.tblVenues.reloadData()
                     }
@@ -239,6 +264,11 @@ extension ViewController {
             }
         })
         
-        task.resume()
+        tblVenues.isHidden = true
+        cancelAllRunningRequest { (finished) in
+            if finished {
+                task.resume()
+            }
+        }
     }
 }

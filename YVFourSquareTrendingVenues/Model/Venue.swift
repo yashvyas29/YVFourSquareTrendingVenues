@@ -8,12 +8,14 @@
 
 import UIKit
 
-struct VenuesResponse: Codable {
-    var venues: [Venue]
-}
-
 struct Venues: Codable {
     var response: VenuesResponse
+}
+
+struct VenuesResponse: Codable {
+    
+    // MARK: - Properties
+    var venues: [Venue]
 }
 
 struct Venue: Codable {
