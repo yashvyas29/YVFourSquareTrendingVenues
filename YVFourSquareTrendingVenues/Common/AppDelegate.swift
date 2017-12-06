@@ -21,17 +21,13 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         let fileManager = FileManager.default
         if let cachesUrl =  FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask).first {
             
-            let cachesPath = cachesUrl.path
+            let cachesPath = cachesUrl.appendingPathComponent(Bundle.main.bundleIdentifier!).path
             
             do {
-                let files = try fileManager.contentsOfDirectory(atPath: cachesPath)
-                if let filePath = files.first {
-                    let attributes = try fileManager.attributesOfItem(atPath: filePath)
-                    if let lastModifiedDate = attributes[.modificationDate] as? Date, lastModifiedDate.timeIntervalSinceNow > (7*24*36*36) {
-                        for file in files {
-                            try fileManager.removeItem(atPath: file)
-                        }
-                    }
+                let attributes = try fileManager.attributesOfItem(atPath: cachesPath)
+                if let lastModifiedDate = attributes[.modificationDate] as? Date, -lastModifiedDate.timeIntervalSinceNow > (7*24*36*36) {
+                    URLCache.shared.removeAllCachedResponses()
+                    try fileManager.removeItem(atPath: cachesPath)
                 }
             } catch {
                 print(error.localizedDescription)

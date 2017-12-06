@@ -9,11 +9,7 @@
 import UIKit
 import CoreLocation
 
-// MARK: - FourSquare Client Id and Secret
-let client_id = "LHD5XJ3ZAJTIO0IMXY12NIMYSLOSGYJCTYYJN1WJMD4PJ4XT" // visit developer.foursqure.com for API key
-let client_secret = "I0SATNN3JW0CHHDXZQ2AN1K0AKCFXLMFKLO4OGC1I41UF005" // visit developer.foursqure.com for API key
-
-class ViewController: UIViewController, UISearchBarDelegate {
+class ViewController: UIViewController {
 
     // MARK: - Outlets
     @IBOutlet weak var tblVenues: UITableView!
@@ -67,7 +63,7 @@ class ViewController: UIViewController, UISearchBarDelegate {
     // MARK: - Methods
     // Figure out where the user is
     func getCurrentLocation() {
-        // check if access is granted
+        // Check if location access is granted
         if CLLocationManager.locationServicesEnabled() {
             switch(CLLocationManager.authorizationStatus()) {
             case .authorizedWhenInUse:
@@ -98,17 +94,7 @@ class ViewController: UIViewController, UISearchBarDelegate {
             searchController?.dimsBackgroundDuringPresentation = false
         }
         self.navigationItem.searchController = searchController
-    }
-    
-    func searchBarCancelButtonClicked(_ searchBar: UISearchBar) {
-        self.navigationItem.searchController = nil
-    }
-    
-    func searchBar(_ searchBar: UISearchBar, shouldChangeTextIn range: NSRange, replacementText text: String) -> Bool {
-        if ((text.count == 0 && range.length == 1) || (range.location >= 2)) && text != "\n"{
-            searchForVenue()
-        }
-        return true
+        searchController?.isActive = true
     }
 }
 
@@ -135,6 +121,27 @@ extension ViewController: CLLocationManagerDelegate {
     
     func locationManager(_ manager: CLLocationManager, didFailWithError error: Error) {
         print(error.localizedDescription)
+    }
+}
+
+// MARK: - Search Bar Delegate
+extension ViewController: UISearchBarDelegate {
+    func searchBarCancelButtonClicked(_ searchBar: UISearchBar) {
+        self.navigationItem.searchController = nil
+        getTrendingVenues()
+    }
+    
+    func searchBar(_ searchBar: UISearchBar, shouldChangeTextIn range: NSRange, replacementText text: String) -> Bool {
+        if ((text.count == 0 && range.length == 1) || (range.location >= 2)) && text != "\n"{
+            searchForVenue()
+        }
+        return true
+    }
+    
+    func searchBar(_ searchBar: UISearchBar, textDidChange searchText: String) {
+        if searchText.count == 0 {
+            getTrendingVenues()
+        }
     }
 }
 
@@ -168,107 +175,4 @@ extension ViewController: UITableViewDelegate, UITableViewDataSource {
         return cell
     }
     
-}
-
-// MARK: - API Calls
-extension ViewController {
-    
-    // Cancel All Active Request
-    func cancelAllRunningRequest(completion: @escaping (_ finished: Bool) -> Void) {
-        
-        URLSession.shared.getTasksWithCompletionHandler {
-            dataTasks, uploadTasks, downloadTasks in
-            
-            for i in 0 ..< dataTasks.count {
-                dataTasks[i].cancel()
-            }
-            completion(true)
-        }
-    }
-    
-    func getTrendingVenues() {
-        let url = "https://api.foursquare.com/v2/venues/trending?ll=\(currentLocation.latitude),\(currentLocation.longitude)&limit=50&client_id=\(client_id)&client_secret=\(client_secret)&v=20171206"
-        
-        let request = NSMutableURLRequest(url: URL(string: url)!)
-        let session = URLSession.shared
-        
-        request.httpMethod = "GET"
-        
-        request.addValue("application/json", forHTTPHeaderField: "Content-Type")
-        request.addValue("application/json", forHTTPHeaderField: "Accept")
-        
-        let task = session.dataTask(with: request as URLRequest, completionHandler: {data, response, err -> Void in
-            
-            if let jsonData = data {
-                
-                do {
-                    self.arrSearchResults = try JSONDecoder().decode(Venues.self, from: jsonData).response.venues
-                } catch {
-                    print(error.localizedDescription)
-                }
-                
-                // set label name and visible
-                DispatchQueue.main.async {
-                    if let currentVenueName = self.arrSearchResults.first?.name {
-                        self.lblCurrentLocation.text = "You're at \(currentVenueName). Here's some trending venues nearby."
-                    } else if self.arrSearchResults.count == 0 {
-                        self.lblCurrentLocation.text = "No Data Available"
-                    }
-                    self.lblCurrentLocation.superview?.isHidden = false
-                    self.tblVenues.isHidden = false
-                    self.tblVenues.reloadData()
-                }
-            }
-        })
-        
-        tblVenues.isHidden = true
-        cancelAllRunningRequest { (finished) in
-            if finished {
-                task.resume()
-            }
-        }
-    }
-    
-    func searchForVenue() {
-        let url = "https://api.foursquare.com/v2/venues/search?ll=\(currentLocation.latitude),\(currentLocation.longitude)&limit=100&client_id=\(client_id)&client_secret=\(client_secret)&v=20171206&query=" + (searchController?.searchBar.text?.trimmingCharacters(in: .whitespacesAndNewlines) ?? "")
-        
-        let request = NSMutableURLRequest(url: URL(string: url)!)
-        let session = URLSession.shared
-        
-        request.httpMethod = "GET"
-        
-        request.addValue("application/json", forHTTPHeaderField: "Content-Type")
-        request.addValue("application/json", forHTTPHeaderField: "Accept")
-        
-        let task = session.dataTask(with: request as URLRequest, completionHandler: {data, response, err -> Void in
-            
-            if let jsonData = data {
-                
-                do {
-                    
-                    self.arrSearchResults = try JSONDecoder().decode(Venues.self, from: jsonData).response.venues
-                    
-                    DispatchQueue.main.async {
-                        if self.arrSearchResults.count == 0 {
-                            self.lblCurrentLocation.text = "No Data Available"
-                            self.lblCurrentLocation.superview?.isHidden = false
-                        } else {
-                            self.lblCurrentLocation.superview?.isHidden = true
-                        }
-                        self.tblVenues.isHidden = false
-                        self.tblVenues.reloadData()
-                    }
-                } catch {
-                    print(error.localizedDescription)
-                }
-            }
-        })
-        
-        tblVenues.isHidden = true
-        cancelAllRunningRequest { (finished) in
-            if finished {
-                task.resume()
-            }
-        }
-    }
 }

@@ -14,6 +14,7 @@
 		22D371831FD70431001A03B0 /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 22D371811FD70431001A03B0 /* LaunchScreen.storyboard */; };
 		22D3718C1FD71C33001A03B0 /* SearchCell.swift in Sources */ = {isa = PBXBuildFile; fileRef = 22D3718B1FD71C33001A03B0 /* SearchCell.swift */; };
 		22D371911FD72694001A03B0 /* Venue.swift in Sources */ = {isa = PBXBuildFile; fileRef = 22D371901FD72694001A03B0 /* Venue.swift */; };
+		ACDD29611FD7E8920052C48C /* ApiCall.swift in Sources */ = {isa = PBXBuildFile; fileRef = ACDD29601FD7E8920052C48C /* ApiCall.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -26,6 +27,7 @@
 		22D371841FD70431001A03B0 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		22D3718B1FD71C33001A03B0 /* SearchCell.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SearchCell.swift; sourceTree = "<group>"; };
 		22D371901FD72694001A03B0 /* Venue.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Venue.swift; sourceTree = "<group>"; };
+		ACDD29601FD7E8920052C48C /* ApiCall.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ApiCall.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -82,6 +84,7 @@
 			isa = PBXGroup;
 			children = (
 				22D371781FD70431001A03B0 /* AppDelegate.swift */,
+				ACDD29601FD7E8920052C48C /* ApiCall.swift */,
 			);
 			path = Common;
 			sourceTree = "<group>";
@@ -174,6 +177,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				ACDD29611FD7E8920052C48C /* ApiCall.swift in Sources */,
 				22D3717B1FD70431001A03B0 /* ViewController.swift in Sources */,
 				22D371911FD72694001A03B0 /* Venue.swift in Sources */,
 				22D3718C1FD71C33001A03B0 /* SearchCell.swift in Sources */,
